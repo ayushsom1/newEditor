@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text-Based Word-like Editor with Preview</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f0f0;
+      }
+      .container {
+        display: flex;
+        max-width: 1800px;
+        margin: 0 auto;
+        gap: 20px;
+      }
+      .editor-container,
+      .preview-container {
+        flex: 1;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .toolbar {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .toolbar button,
+      .toolbar select {
+        background-color: #ffffff;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      .toolbar button:hover,
+      .toolbar select:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+      }
+      .toolbar button:active {
+        background-color: #dee2e6;
+      }
+      .editor-content,
+      .preview-content {
+        padding: 20px;
+        min-height: 300px;
+        border: none;
+        outline: none;
+        font-size: 16px;
+        line-height: 1.5;
+        overflow-y: auto;
+        height: calc(100vh - 180px);
+      }
+      .preview-content {
+        background-color: #f8f9fa;
+      }
+      .save-button {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+      .save-button:hover {
+        background-color: #0056b3;
+      }
+      #tableForm {
+        display: none;
+        position: absolute;
+        background-color: white;
+        border: 1px solid #ced4da;
+        padding: 20px;
+        border-radius: 8px;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 300px;
+      }
+      #tableForm h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+      }
+      #tableForm .form-group {
+        margin-bottom: 15px;
+      }
+      #tableForm label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+      }
+      #tableForm input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      #tableForm .button-group {
+        display: flex;
+        justify-content: space-between;
+      }
+      #tableForm button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-size: 14px;
+      }
+      #tableForm .insert-button {
+        background-color: #28a745;
+        color: white;
+      }
+      #tableForm .insert-button:hover {
+        background-color: #218838;
+      }
+      #tableForm .close-button {
+        background-color: #dc3545;
+        color: white;
+      }
+      #tableForm .close-button:hover {
+        background-color: #c82333;
+      }
+      table {
+        border-collapse: collapse;
+        margin: 10px 0;
+        width: 100%;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #dee2e6;
+      }
+      th,
+      td {
+        padding: 8px;
+        min-width: 30px;
+        min-height: 20px;
+      }
+      th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="editor-container">
+        <div class="toolbar">
+          <button onclick="performAction('cut')">
+            <i class="fas fa-cut"></i>
+          </button>
+          <button onclick="performAction('copy')">
+            <i class="fas fa-copy"></i>
+          </button>
+          <button onclick="performAction('paste')">
+            <i class="fas fa-paste"></i>
+          </button>
+          <button onclick="undo()"><i class="fas fa-undo"></i></button>
+          <button onclick="redo()"><i class="fas fa-redo"></i></button>
+          <select onchange="applyStyle('fontName', this.value)">
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+          </select>
+          <select onchange="applyStyle('fontSize', this.value)">
+            <option value="1">8</option>
+            <option value="2">10</option>
+            <option value="3">12</option>
+            <option value="4">14</option>
+            <option value="5">18</option>
+            <option value="6">24</option>
+            <option value="7">36</option>
+          </select>
+          <button onclick="applyStyle('bold')">
+            <i class="fas fa-bold"></i>
+          </button>
+          <button onclick="applyStyle('italic')">
+            <i class="fas fa-italic"></i>
+          </button>
+          <button onclick="applyStyle('underline')">
+            <i class="fas fa-underline"></i>
+          </button>
+          <button onclick="applyStyle('strikeThrough')">
+            <i class="fas fa-strikethrough"></i>
+          </button>
+          <button onclick="applyStyle('justifyLeft')">
+            <i class="fas fa-align-left"></i>
+          </button>
+          <button onclick="applyStyle('justifyCenter')">
+            <i class="fas fa-align-center"></i>
+          </button>
+          <button onclick="applyStyle('justifyRight')">
+            <i class="fas fa-align-right"></i>
+          </button>
+          <button onclick="applyStyle('justifyFull')">
+            <i class="fas fa-align-justify"></i>
+          </button>
+          <button onclick="showTableForm()">
+            <i class="fas fa-table"></i>
+          </button>
+          <button onclick="applyStyle('insertOrderedList')">
+            <i class="fas fa-list-ol"></i>
+          </button>
+          <button onclick="applyStyle('insertUnorderedList')">
+            <i class="fas fa-list-ul"></i>
+          </button>
+        </div>
+        <div class="editor-content" id="editor" contenteditable="true">
+          Start typing your content here...
+        </div>
+        <button class="save-button" onclick="saveContent()">Save</button>
+      </div>
+      <div class="preview-container">
+        <h2 style="text-align: center">Preview</h2>
+        <div class="preview-content" id="preview"></div>
+      </div>
+    </div>
+
+    <div id="tableForm">
+      <h3>Insert Table</h3>
+      <div class="form-group">
+        <label for="rows">Rows:</label>
+        <input type="number" id="rows" min="1" max="10" value="3" />
+      </div>
+      <div class="form-group">
+        <label for="cols">Columns:</label>
+        <input type="number" id="cols" min="1" max="10" value="3" />
+      </div>
+      <div class="button-group">
+        <button class="insert-button" onclick="insertTable()">Insert</button>
+        <button class="close-button" onclick="closeTableForm()">Close</button>
+      </div>
+    </div>
+
+    <script>
+      const editor = document.getElementById("editor");
+      const preview = document.getElementById("preview");
+      const undoStack = [];
+      const redoStack = [];
+
+      editor.addEventListener("input", function () {
+        undoStack.push(editor.innerHTML);
+        redoStack.length = 0; // Clear redo stack on new input
+        updatePreview();
+      });
+
+      function updatePreview() {
+        preview.innerHTML = editor.innerHTML;
+      }
+
+      function undo() {
+        if (undoStack.length > 1) {
+          redoStack.push(undoStack.pop());
+          editor.innerHTML = undoStack[undoStack.length - 1];
+          updatePreview();
+        }
+      }
+
+      function redo() {
+        if (redoStack.length > 0) {
+          undoStack.push(redoStack[redoStack.length - 1]);
+          editor.innerHTML = redoStack.pop();
+          updatePreview();
+        }
+      }
+
+      function applyStyle(command, value = null) {
+        document.execCommand(command, false, value);
+        editor.focus();
+        updatePreview();
+      }
+
+      function performAction(action) {
+        if (action === "cut" || action === "copy" || action === "paste") {
+          if (navigator.clipboard) {
+            handleClipboardAction(action);
+          } else {
+            document.execCommand(action);
+          }
+        } else {
+          document.execCommand(action);
+        }
+        editor.focus();
+        updatePreview();
+      }
+
+      async function handleClipboardAction(action) {
+        try {
+          if (action === "cut") {
+            await navigator.clipboard.writeText(
+              window.getSelection().toString()
+            );
+            document.execCommand("delete");
+          } else if (action === "copy") {
+            await navigator.clipboard.writeText(
+              window.getSelection().toString()
+            );
+          } else if (action === "paste") {
+            const text = await navigator.clipboard.readText();
+            document.execCommand("insertText", false, text);
+          }
+        } catch (err) {
+          console.error("Failed to execute clipboard action:", err);
+          // Fallback to execCommand if clipboard API fails
+          document.execCommand(action);
+        }
+        updatePreview();
+      }
+
+      function showTableForm() {
+        const form = document.getElementById("tableForm");
+        form.style.display = "block";
+        const editorRect = document
+          .querySelector(".editor-container")
+          .getBoundingClientRect();
+        form.style.top = `${editorRect.top + window.scrollY + 50}px`;
+        form.style.left = `${
+          editorRect.left + (editorRect.width - form.offsetWidth) / 2
+        }px`;
+      }
+
+      function closeTableForm() {
+        document.getElementById("tableForm").style.display = "none";
+      }
+
+      function insertTable() {
+        const rows = parseInt(document.getElementById("rows").value);
+        const cols = parseInt(document.getElementById("cols").value);
+        let tableHtml = "<table><tbody>";
+
+        for (let i = 0; i < rows; i++) {
+          tableHtml += "<tr>";
+          for (let j = 0; j < cols; j++) {
+            tableHtml += "<td>Cell</td>";
+          }
+          tableHtml += "</tr>";
+        }
+        tableHtml += "</tbody></table>";
+
+        document.execCommand("insertHTML", false, tableHtml);
+        closeTableForm();
+        editor.focus();
+        updatePreview();
+      }
+
+      function saveContent() {
+        const content = editor.innerHTML;
+        console.log("Saving content:", content);
+        // In a real application, you'd send this data to your .NET backend
+        // For example, using fetch API:
+        // fetch('/AuditReport/Save', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({ content: content }),
+        // })
+        // .then(response => response.json())
+        // .then(data => console.log('Save successful:', data))
+        // .catch((error) => console.error('Error:', error));
+      }
+
+      // Initialize undo stack and preview
+      undoStack.push(editor.innerHTML);
+      updatePreview();
+    </script>
+  </body>
+</html>
