@@ -225,10 +225,10 @@ const TextEditor = forwardRef(({ initialContent = '', onSave }, ref) => {
         ></div>
         <button className="save-button" onClick={saveContent}>Save</button>
       </div>
-      <div className="preview-container">
+      {/* <div className="preview-container">
         <h2 style={{ textAlign: 'center' }}>Preview</h2>
         <div className="preview-content" ref={previewRef}></div>
-      </div>
+      </div> */}
 
       {tableFormVisible && (
         <div id="tableForm" className="table-form">
